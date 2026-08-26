@@ -62,8 +62,8 @@ export async function POST(request: Request) {
     // Blocklist — specific senders are silently dropped: return a normal success
     // (they see the thank-you, no error, no reason to retry) but NO webhook,
     // CRM, Discord, or CAPI fires. Added 2026-07-11 per William (M&G).
-    const BLOCKED_PHONES = new Set(["4792528900"])
-    const BLOCKED_EMAILS = new Set(["moondanze@aol.com"])
+    const BLOCKED_PHONES = new Set(["4792528900", "2145428619"])
+    const BLOCKED_EMAILS = new Set(["moondanze@aol.com", "fluther41@gmail.com"])
     if (BLOCKED_PHONES.has(phone) || BLOCKED_EMAILS.has(email)) {
       return NextResponse.json({ success: true })
     }
