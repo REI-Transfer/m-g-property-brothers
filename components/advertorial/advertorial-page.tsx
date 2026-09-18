@@ -75,7 +75,9 @@ export function AdvertorialPage({
     setModalOpen(true)
   }
   const openModalFromButton = () => {
-    if (!seeded && stickyAddr.trim()) setSeeded({ address: stickyAddr.trim(), state: "", city: "", county: "" })
+    // Only an address picked from the dropdown (handleStickySelect) is seeded,
+    // because only that one passed the location gate. Typed-but-unpicked text
+    // opens the survey at its own (gated) address step instead.
     setModalOpen(true)
   }
 

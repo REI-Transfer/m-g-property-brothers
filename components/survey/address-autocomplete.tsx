@@ -44,6 +44,23 @@ function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+// Location gate read straight from the build env, so EVERY address box on the
+// site (survey, zero-distraction form, advertorial sticky bar) is gated without
+// each caller passing lists. Mirror the ad set's targeting here:
+//   NEXT_PUBLIC_ALLOWED_STATES   = "TX"
+//   NEXT_PUBLIC_ALLOWED_COUNTIES = "Collin,Tarrant,..." (scoped by the states)
+// Empty = no gate. An address that fails goes to onOutOfArea, never onSelect.
+const splitEnv = (v?: string) => (v || "").split(",").map((s) => s.trim()).filter(Boolean)
+const GATE_STATES = splitEnv(process.env.NEXT_PUBLIC_ALLOWED_STATES).map((s) => s.toUpperCase())
+const normCounty = (c: string) => (c || "").replace(/\s+county$/i, "").trim().toLowerCase()
+const GATE_COUNTIES = splitEnv(process.env.NEXT_PUBLIC_ALLOWED_COUNTIES).map(normCounty)
+
+function passesLocationGate(state: string, county: string): boolean {
+  if (GATE_STATES.length > 0 && !GATE_STATES.includes((state || "").toUpperCase())) return false
+  if (GATE_COUNTIES.length > 0 && !GATE_COUNTIES.includes(normCounty(county))) return false
+  return true
+}
+
 function isInServiceArea(lat: number, lng: number, areas: ServiceArea[]): boolean {
   if (!areas || areas.length === 0) return true // no restriction if no areas configured
   // Defensive: ignore malformed entries (e.g. ["StateName"] from the onboarding tool)
@@ -163,6 +180,12 @@ export function AddressAutocomplete({
       }
 
       const details: AddressDetails = { formattedAddress: place.formatted_address, lat, lng, state, city, county }
+
+      if (!passesLocationGate(state, county)) {
+        onChange(place.formatted_address)
+        onOutOfArea?.(place.formatted_address)
+        return
+      }
 
       // Service area validation
       if (serviceAreas.length > 0 && lat !== undefined && lng !== undefined) {
